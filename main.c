@@ -78,6 +78,10 @@ typedef struct {
 
     /* Thread */
     SDL_Thread *thread;
+
+    /* Scheme */
+    scheme *sc;
+    pointer cb;
 } my_struct;
 
 static int run_program(void *ud)
@@ -138,7 +142,7 @@ static int run_program(void *ud)
 
         /* GUI */
         {struct nk_panel layout;
-        if (nk_begin(dat->ctx, &layout, "Demo", nk_rect(50, 50, 210, 450),
+        if (nk_begin(dat->ctx, &layout, "", nk_rect(50, 50, 210, 450),
             NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
             NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
         {
@@ -146,16 +150,19 @@ static int run_program(void *ud)
             static int op = EASY;
             static int property = 20;
 
-            nk_layout_row_static(ctx, 30, 80, 1);
-            if (nk_button_label(ctx, "button"))
-                fprintf(stdout, "button pressed\n");
-            nk_layout_row_dynamic(ctx, 30, 2);
-            if (nk_option_label(ctx, "easy", op == EASY)) op = EASY;
-            if (nk_option_label(ctx, "hard", op == HARD)) op = HARD;
+            //nk_layout_row_static(ctx, 30, 80, 1);
+            //if (nk_button_label(ctx, "button"))
+            //    fprintf(stdout, "button pressed\n");
+            //nk_layout_row_dynamic(ctx, 30, 2);
+            //if (nk_option_label(ctx, "easy", op == EASY)) op = EASY;
+            //if (nk_option_label(ctx, "hard", op == HARD)) op = HARD;
             nk_layout_row_dynamic(ctx, 25, 1);
-            nk_property_int(ctx, "Compression:", 0, &property, 100, 10, 1);
-            nk_label(ctx, "Slider:", NK_TEXT_LEFT);
-            nk_slider_float(ctx, 0, &dat->val, 1, 0.01);
+            //nk_property_int(ctx, "Compression:", 0, &property, 100, 10, 1);
+            //nk_label(ctx, "Slider:", NK_TEXT_LEFT);
+            //nk_slider_float(ctx, 0, &dat->val, 1, 0.01);
+            if(dat->cb != dat->sc->NIL) {
+                scheme_call(dat->sc, dat->cb, dat->sc->NIL);
+            }
         }
         nk_end(ctx);}
 
@@ -207,6 +214,7 @@ static my_struct g_dat;
 static pointer nuklear_start(scheme *sc, pointer args) {
     g_dat.running = 1;
     g_dat.val = 0;
+    g_dat.cb = car(args);
     g_dat.thread = SDL_CreateThread(run_program, "thread", &g_dat);
     return sc->NIL;
 }
@@ -221,14 +229,26 @@ static pointer nuklear_stop(scheme *sc, pointer args) {
     return sc->NIL;
 }
 
-
+static pointer nuklear_slider(scheme *sc, pointer args) {
+    SPFLOAT *val = (SPFLOAT *)string_value(car(args));
+    args = cdr(args);
+    const char *name = string_value(car(args));
+    nk_label(g_dat.ctx, name, NK_TEXT_LEFT);
+    nk_slider_float(g_dat.ctx, 0, val, 1, 0.01);
+    return sc->NIL;
+}
 
 void init_nuklear(scheme *sc) 
 {
+    g_dat.sc = sc;
+    g_dat.cb = sc->NIL;
     scheme_define(sc, sc->global_env, 
         mk_symbol(sc, "nuklear-start"), 
         mk_foreign_func(sc, nuklear_start));
     scheme_define(sc, sc->global_env, 
         mk_symbol(sc, "nuklear-stop"), 
         mk_foreign_func(sc, nuklear_start));
+    scheme_define(sc, sc->global_env, 
+        mk_symbol(sc, "nuklear-slider"), 
+        mk_foreign_func(sc, nuklear_slider));
 }
