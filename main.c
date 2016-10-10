@@ -174,25 +174,6 @@ static int run_program(void *ud)
 
     return 0;
 }
-/*
-int main(int argc, char* argv[])
-{
-    my_struct dat;
-    dat.running = 1;
-    dat.val = 0;
-    dat.thread = SDL_CreateThread(run_program, "thread", &dat);
-    fgetc(stdin);
-    dat.running = 0;
-    SDL_WaitThread(dat.thread, NULL);
-
-    nk_sdl_shutdown();
-    SDL_GL_DeleteContext(dat.glContext);
-    SDL_DestroyWindow(dat.win);
-    SDL_Quit();
-    return 0;
-}
-*/
-
 static my_struct g_dat;
 
 static pointer nuklear_start(scheme *sc, pointer args) {
@@ -203,9 +184,12 @@ static pointer nuklear_start(scheme *sc, pointer args) {
     return sc->NIL;
 }
 
-static pointer nuklear_stop(scheme *sc, pointer args) {
-
+static pointer nuklear_stop(scheme *sc, pointer args) 
+{
+    g_dat.running = 0;
+    fprintf(stderr, "shutting down...\n");
     SDL_WaitThread(g_dat.thread, NULL);
+    fprintf(stderr, "we have shut down...\n");
     nk_sdl_shutdown();
     SDL_GL_DeleteContext(g_dat.glContext);
     SDL_DestroyWindow(g_dat.win);
@@ -266,7 +250,7 @@ void init_nuklear(scheme *sc)
         mk_foreign_func(sc, nuklear_start));
     scheme_define(sc, sc->global_env, 
         mk_symbol(sc, "nuklear-stop"), 
-        mk_foreign_func(sc, nuklear_start));
+        mk_foreign_func(sc, nuklear_stop));
     scheme_define(sc, sc->global_env, 
         mk_symbol(sc, "nuklear-slider"), 
         mk_foreign_func(sc, nuklear_slider));
