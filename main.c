@@ -71,10 +71,13 @@ typedef struct {
     struct nk_color background;
     int win_width, win_height;
     int running;
+    nk_flags flags;
+
 
     /* GUI */
     struct nk_context *ctx;
     float val;
+    struct nk_panel layout;
 
     /* Thread */
     SDL_Thread *thread;
@@ -141,30 +144,11 @@ static int run_program(void *ud)
         nk_input_end(dat->ctx);
 
         /* GUI */
-        {struct nk_panel layout;
-        if (nk_begin(dat->ctx, &layout, "", nk_rect(50, 50, 210, 450),
-            NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
-            NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
         {
-            enum {EASY, HARD};
-            static int op = EASY;
-            static int property = 20;
-
-            //nk_layout_row_static(ctx, 30, 80, 1);
-            //if (nk_button_label(ctx, "button"))
-            //    fprintf(stdout, "button pressed\n");
-            //nk_layout_row_dynamic(ctx, 30, 2);
-            //if (nk_option_label(ctx, "easy", op == EASY)) op = EASY;
-            //if (nk_option_label(ctx, "hard", op == HARD)) op = HARD;
-            nk_layout_row_dynamic(ctx, 25, 1);
-            //nk_property_int(ctx, "Compression:", 0, &property, 100, 10, 1);
-            //nk_label(ctx, "Slider:", NK_TEXT_LEFT);
-            //nk_slider_float(ctx, 0, &dat->val, 1, 0.01);
             if(dat->cb != dat->sc->NIL) {
                 scheme_call(dat->sc, dat->cb, dat->sc->NIL);
             }
         }
-        nk_end(ctx);}
 
         /* -------------- EXAMPLES ---------------- */
         /* calculator(ctx); */
@@ -238,10 +222,45 @@ static pointer nuklear_slider(scheme *sc, pointer args) {
     return sc->NIL;
 }
 
+static pointer nuklear_begin(scheme *sc, pointer args) {
+    const char *name = string_value(car(args));
+    args = cdr(args);
+    int x = ivalue(car(args));
+    args = cdr(args);
+    int y = ivalue(car(args));
+    args = cdr(args);
+    int w = ivalue(car(args));
+    args = cdr(args);
+    int h = ivalue(car(args));
+    args = cdr(args);
+
+    int rc = nk_begin(g_dat.ctx, &g_dat.layout, name, nk_rect(x, y, w, h), g_dat.flags);
+    if(!rc) {
+        fprintf(stderr, "error!\n");
+    }
+    /* TODO: return rc */
+    return sc->NIL;
+}
+
+static pointer nuklear_end(scheme *sc, pointer args) {
+    nk_end(g_dat.ctx);
+    return sc->NIL;
+}
+
+static pointer nuklear_row_dynamic(scheme *sc, pointer args) {
+    float height = rvalue(car(args));
+    args = cdr(args);
+    int columns = ivalue(car(args));
+    nk_layout_row_dynamic(g_dat.ctx, height, columns);
+    return sc->NIL;
+}
+
 void init_nuklear(scheme *sc) 
 {
     g_dat.sc = sc;
     g_dat.cb = sc->NIL;
+    g_dat.flags = NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+        NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE;
     scheme_define(sc, sc->global_env, 
         mk_symbol(sc, "nuklear-start"), 
         mk_foreign_func(sc, nuklear_start));
@@ -251,4 +270,13 @@ void init_nuklear(scheme *sc)
     scheme_define(sc, sc->global_env, 
         mk_symbol(sc, "nuklear-slider"), 
         mk_foreign_func(sc, nuklear_slider));
+    scheme_define(sc, sc->global_env, 
+        mk_symbol(sc, "nuklear-begin"), 
+        mk_foreign_func(sc, nuklear_begin));
+    scheme_define(sc, sc->global_env, 
+        mk_symbol(sc, "nuklear-end"), 
+        mk_foreign_func(sc, nuklear_end));
+    scheme_define(sc, sc->global_env, 
+        mk_symbol(sc, "nuklear-row-dynamic"), 
+        mk_foreign_func(sc, nuklear_row_dynamic));
 }
