@@ -16,5 +16,5 @@
 
 (ps-turnon 0)
 
-(nuklear-start callback) 
+(nuklear-start callback 300 800) 
 (ps-set-shutdown-callback nuklear-stop)

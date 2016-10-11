@@ -101,7 +101,7 @@ static int run_program(void *ud)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
     dat->win = SDL_CreateWindow("Demo",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-        WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_ALLOW_HIGHDPI);
+        dat->win_width, dat->win_height, SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_ALLOW_HIGHDPI);
     dat->glContext = SDL_GL_CreateContext(dat->win);
     SDL_GetWindowSize(dat->win, &dat->win_width, &dat->win_height);
     dat->ctx = nk_sdl_init(dat->win);
@@ -183,6 +183,11 @@ static pointer nuklear_start(scheme *sc, pointer args) {
     g_dat.running = 1;
     g_dat.val = 0;
     g_dat.cb = car(args);
+    args = cdr(args);
+    g_dat.win_width = ivalue(car(args));
+    args = cdr(args);
+    g_dat.win_height = ivalue(car(args));
+    scheme_cupboard(sc, g_dat.cb);
     g_dat.thread = SDL_CreateThread(run_program, "thread", &g_dat);
     return sc->NIL;
 }

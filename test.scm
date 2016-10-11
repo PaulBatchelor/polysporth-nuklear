@@ -12,3 +12,4 @@
   (load "setup.scm")))
 
 (ps-set-init-callback init_time) 
+;(ps-gc-verbose)
