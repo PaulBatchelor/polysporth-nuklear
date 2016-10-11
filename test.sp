@@ -6,6 +6,3 @@ _in 1 zeros
 0 1 _out ftsum
 )
 
-(
-440 0.5 sine
-)

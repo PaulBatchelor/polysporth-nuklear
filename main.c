@@ -171,7 +171,10 @@ static int run_program(void *ud)
         nk_sdl_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_MEMORY, MAX_ELEMENT_MEMORY);
         SDL_GL_SwapWindow(dat->win);}
     }
-
+    nk_sdl_shutdown();
+    SDL_GL_DeleteContext(dat->glContext);
+    SDL_DestroyWindow(dat->win);
+    SDL_Quit();
     return 0;
 }
 static my_struct g_dat;
@@ -187,13 +190,7 @@ static pointer nuklear_start(scheme *sc, pointer args) {
 static pointer nuklear_stop(scheme *sc, pointer args) 
 {
     g_dat.running = 0;
-    fprintf(stderr, "shutting down...\n");
     SDL_WaitThread(g_dat.thread, NULL);
-    fprintf(stderr, "we have shut down...\n");
-    nk_sdl_shutdown();
-    SDL_GL_DeleteContext(g_dat.glContext);
-    SDL_DestroyWindow(g_dat.win);
-    SDL_Quit();
     return sc->NIL;
 }
 
