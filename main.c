@@ -16,6 +16,7 @@
 
 #include <soundpipe.h>
 #include <sporth.h>
+#include <runt.h>
 
 #define NK_INCLUDE_FIXED_TYPES
 #define NK_INCLUDE_STANDARD_IO
@@ -82,9 +83,8 @@ typedef struct {
     /* Thread */
     SDL_Thread *thread;
 
-    /* Scheme */
-    scheme *sc;
-    pointer cb;
+    runt_cell *cell;
+    runt_vm *vm;
 } my_struct;
 
 static int run_program(void *ud)
@@ -145,9 +145,7 @@ static int run_program(void *ud)
 
         /* GUI */
         {
-            if(dat->cb != dat->sc->NIL) {
-                scheme_call(dat->sc, dat->cb, dat->sc->NIL);
-            }
+            /* TODO: make runt callback */
         }
 
         /* -------------- EXAMPLES ---------------- */
@@ -182,12 +180,10 @@ static my_struct g_dat;
 static pointer nuklear_start(scheme *sc, pointer args) {
     g_dat.running = 1;
     g_dat.val = 0;
-    g_dat.cb = car(args);
     args = cdr(args);
     g_dat.win_width = ivalue(car(args));
     args = cdr(args);
     g_dat.win_height = ivalue(car(args));
-    scheme_cupboard(sc, g_dat.cb);
     g_dat.thread = SDL_CreateThread(run_program, "thread", &g_dat);
     return sc->NIL;
 }
@@ -243,8 +239,6 @@ static pointer nuklear_row_dynamic(scheme *sc, pointer args) {
 
 void init_nuklear(scheme *sc) 
 {
-    g_dat.sc = sc;
-    g_dat.cb = sc->NIL;
     g_dat.flags = NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
         NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE;
     scheme_define(sc, sc->global_env, 
